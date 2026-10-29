@@ -1,0 +1,17 @@
+
+fastapi
+uvicorn
+streamlit
+sqlalchemy
+pdfplumber
+scikit-learn
+pandas
+pydantic
+python-multipart
+python-dotenv
+structlog
+groq
+pytest
+httpx
+reportlab
+Faker
