@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+fintech-env/
+
+# Secrets and environment variables
+.env
+.env.*
+!.env.example
+
+# Local databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Generated evaluation PDFs and temporary files
+data/rebuilt_invoices/
+*.tmp
+
+# Logs
+*.log
+
+# Editor and operating-system files
+.vscode/
+.DS_Store
+Thumbs.db
