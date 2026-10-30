@@ -10,6 +10,8 @@ from sqlalchemy import (
     String,
     Text,
     create_engine,
+    inspect,
+    text,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
 
@@ -47,7 +49,6 @@ class Invoice(Base):
     total: Mapped[float | None] = mapped_column(Float, nullable=True)
     currency: Mapped[str | None] = mapped_column(String(3), nullable=True)
 
-    # Persisted ML prediction
     category: Mapped[str | None] = mapped_column(String(100), nullable=True)
     category_confidence: Mapped[float | None] = mapped_column(Float, nullable=True)
 
@@ -68,6 +69,15 @@ class Review(Base):
     action: Mapped[str] = mapped_column(String(30))
     reviewer: Mapped[str] = mapped_column(String(100), default="human")
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # Audit fields for category edits
+    previous_category: Mapped[str | None] = mapped_column(
+        String(100), nullable=True
+    )
+    new_category: Mapped[str | None] = mapped_column(
+        String(100), nullable=True
+    )
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
@@ -75,24 +85,47 @@ class Review(Base):
 
 
 def init_db() -> None:
-    """Create missing tables; existing tables are not rebuilt."""
+    """Create missing tables and add new columns without deleting data."""
     Base.metadata.create_all(bind=engine)
 
-    # SQLite create_all does not add columns to an existing table.
-    # Add the new nullable columns without deleting existing invoices.
-    from sqlalchemy import inspect, text
-
     inspector = inspect(engine)
-    columns = {column["name"] for column in inspector.get_columns("invoices")}
 
     with engine.begin() as connection:
-        if "category" not in columns:
+        invoice_columns = {
+            column["name"] for column in inspector.get_columns("invoices")
+        }
+
+        if "category" not in invoice_columns:
             connection.execute(
                 text("ALTER TABLE invoices ADD COLUMN category VARCHAR(100)")
             )
-        if "category_confidence" not in columns:
+
+        if "category_confidence" not in invoice_columns:
             connection.execute(
-                text("ALTER TABLE invoices ADD COLUMN category_confidence FLOAT")
+                text(
+                    "ALTER TABLE invoices "
+                    "ADD COLUMN category_confidence FLOAT"
+                )
+            )
+
+        review_columns = {
+            column["name"] for column in inspect(connection).get_columns("reviews")
+        }
+
+        if "previous_category" not in review_columns:
+            connection.execute(
+                text(
+                    "ALTER TABLE reviews "
+                    "ADD COLUMN previous_category VARCHAR(100)"
+                )
+            )
+
+        if "new_category" not in review_columns:
+            connection.execute(
+                text(
+                    "ALTER TABLE reviews "
+                    "ADD COLUMN new_category VARCHAR(100)"
+                )
             )
 
 

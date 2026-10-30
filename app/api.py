@@ -133,13 +133,39 @@ async def upload_invoice(file: UploadFile = File(...)):
             )
 
             # All uploads require human review in this prototype.
-            status = (
-                "pending_review"
-                if classification
-                else "pending_classification"
+            # Auto-approve only when extraction is complete,
+            # validation passes, and confidence is at least 0.85.
+            required_fields = [
+                "vendor",
+                "trn",
+                "invoice_number",
+                "date",
+                "subtotal",
+                "vat",
+                "total",
+                "currency",
+            ]
+
+            extraction_complete = (
+                all(
+                    str(extracted.get(field) or "").strip()
+                    for field in required_fields
+                )
+                and bool(extracted.get("line_items"))
             )
 
-            if not validation["valid"]:
+            confidence_qualified = (
+                confidence is not None
+                and confidence >= 0.85
+            )
+
+            if (
+                extraction_complete
+                and validation["valid"]
+                and confidence_qualified
+            ):
+                status = "approved"
+            else:
                 status = "pending_review"
 
             invoice = Invoice(
@@ -261,6 +287,7 @@ def get_invoice(invoice_id: int):
         }
 
 
+
 @app.post("/invoices/{invoice_id}/review")
 def review_invoice(invoice_id: int, request: ReviewRequest):
     with SessionLocal() as session:
@@ -278,6 +305,9 @@ def review_invoice(invoice_id: int, request: ReviewRequest):
                 detail="Cannot approve an invoice that failed validation.",
             )
 
+        previous_category = invoice.category
+        new_category = previous_category
+
         if request.category is not None:
             category = request.category.strip()
 
@@ -287,6 +317,7 @@ def review_invoice(invoice_id: int, request: ReviewRequest):
                     detail="Category cannot be empty when supplied.",
                 )
 
+            new_category = category
             invoice.category = category
 
         if request.action == "approve":
@@ -294,11 +325,14 @@ def review_invoice(invoice_id: int, request: ReviewRequest):
         else:
             invoice.status = "rejected"
 
+        # Record the review action and any category change.
         review = Review(
             invoice_id=invoice.id,
             action=request.action,
             reviewer=request.reviewer.strip() or "human",
             notes=request.notes,
+            previous_category=previous_category,
+            new_category=new_category,
         )
 
         session.add(review)
@@ -313,5 +347,7 @@ def review_invoice(invoice_id: int, request: ReviewRequest):
                 "action": review.action,
                 "reviewer": review.reviewer,
                 "notes": review.notes,
+                "previous_category": review.previous_category,
+                "new_category": review.new_category,
             },
         }
