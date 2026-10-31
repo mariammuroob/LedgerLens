@@ -16,41 +16,97 @@ DESCRIPTIONS_BY_CATEGORY = {
         "Printer paper, pens, stationery and office supplies",
         "Office furniture and stationery supplies",
         "Computer accessories and office equipment",
+        "Purchase of printer cartridges and paper",
+        "Desk chairs, filing cabinets and office materials",
+        "Pens, notebooks and administrative consumables",
+        "Workplace equipment and stationery purchases",
+        "Office desks, monitors and computer peripherals",
+        "Printing supplies for daily business operations",
+        "General administrative and office consumables",
     ],
     "software": [
         "Software subscription and cloud licensing fees",
         "Annual business software licence renewal",
         "Cloud hosting and software service subscription",
+        "Monthly CRM software subscription",
+        "Enterprise productivity software licences",
+        "Cloud platform usage and hosting charges",
+        "Renewal of accounting application licences",
+        "Business application subscription fees",
+        "Cybersecurity software renewal",
+        "Online collaboration tools subscription",
     ],
     "travel": [
         "Business flight tickets and travel bookings",
         "Hotel accommodation and business travel expenses",
         "Ground transport and travel services",
+        "Airfare for an overseas business meeting",
+        "Hotel stay during a client visit",
+        "Taxi fares for employee business travel",
+        "Rail tickets for a work-related journey",
+        "Car rental for corporate travel",
+        "Airport transfers and travel arrangements",
+        "Business trip accommodation and transport",
     ],
     "meals": [
         "Staff meals and business meeting catering",
         "Restaurant meals for a business meeting",
         "Catering services and refreshments",
+        "Lunch provided during a team workshop",
+        "Refreshments for an internal company event",
+        "Food and beverages for client discussions",
+        "Corporate event catering expenses",
+        "Meals purchased during a business meeting",
+        "Tea, coffee and snacks for employees",
+        "Business lunch and hospitality services",
     ],
     "marketing": [
         "Digital advertising campaign and marketing services",
         "Promotional materials and advertising expenses",
         "Marketing campaign management services",
+        "Paid social media advertising",
+        "Printing brochures and promotional flyers",
+        "Search engine marketing campaign",
+        "Brand design and advertising creative work",
+        "Promotional merchandise for a product launch",
+        "Online campaign management fees",
+        "Market research and brand promotion services",
     ],
     "rent": [
         "Monthly office premises rental",
         "Commercial office space rent for the billing period",
         "Business premises lease payment",
+        "Monthly lease payment for company offices",
+        "Rental charges for a commercial workspace",
+        "Office building occupancy expenses",
+        "Lease fees for business premises",
+        "Monthly payment for rented office space",
+        "Commercial property rental invoice",
+        "Workspace rental for company operations",
     ],
     "professional services": [
         "Consulting, accounting and advisory services",
         "Professional legal and business consulting fees",
         "Accounting services and financial advisory work",
+        "Legal advice for a commercial agreement",
+        "External financial audit services",
+        "Management consulting project fees",
+        "Tax preparation and accounting support",
+        "Contract review by external legal counsel",
+        "Business strategy advisory engagement",
+        "Professional compliance consulting services",
     ],
     "utilities": [
         "Electricity and water consumption charges",
         "Office electricity and utility services",
         "Water, power and utility bills for the billing period",
+        "Monthly electricity bill for office premises",
+        "Water supply charges for the workplace",
+        "Power consumption at the company office",
+        "Commercial utility service invoice",
+        "Electricity supply and distribution charges",
+        "Water and energy usage expenses",
+        "Monthly building utility charges",
     ],
 }
 
@@ -122,8 +178,18 @@ def main():
             category,
             ["General business goods and services"],
         )
-        description = random.Random(seed).choice(options)
 
+        if split == "train":
+            description_options = options[:5]
+        elif split in {"test", "hard"}:
+            description_options = options[5:]
+        else:
+            description_options = options
+
+        seed = int(
+            hashlib.sha256(filename.encode()).hexdigest()[:8], 16
+        )
+        description = random.Random(seed).choice(description_options)
         trn = clean(row.get("trn", ""))
         subtotal = money(row.get("subtotal", ""))
         vat = money(row.get("vat", ""))
